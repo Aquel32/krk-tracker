@@ -10,6 +10,8 @@
   "dependencies": {
     "leaflet": "^1.9.4",
     "next": "15.5.4",
+    "papaparse": "^5.5.3",
+    "protobufjs": "^7.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-leaflet": "^5.0.0"
@@ -18,6 +20,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.20",
     "@types/node": "^20",
+    "@types/papaparse": "^5.3.16",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
