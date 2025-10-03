@@ -49,7 +49,10 @@ export default function Home() {
           position: [s.stop_lat, s.stop_lon],
           style: "font-mono text-black",
           label: "■",
-          onClick: () => setSelectedStop({ stop: s }),
+          onClick: () => {
+            setSelectedStop({ stop: s });
+            setSelectedEntity(null);
+          },
         });
       });
       setStopsMarkers(mrks);
@@ -80,8 +83,16 @@ export default function Home() {
                 : "text-white"
             }`,
             label: data.route_short_name,
-            onClick: () => setSelectedEntity({ entity, data }),
+            onClick: () => {
+              setSelectedEntity({ entity, data });
+              setSelectedStop(null);
+            },
           });
+
+          if (selectedEntity && selectedEntity.entity === entity) {
+            setSelectedEntity({ entity, data });
+            setSelectedStop(null);
+          }
         }
       }
 
@@ -101,8 +112,8 @@ export default function Home() {
 
       <div className="absolute top-2 left-2 bg-white p-2 border border-gray-300 z-10 text-black flex flex-col gap-2">
         {selectedEntity && <Entity selectedEntity={selectedEntity} />}
-        {/* {selectedEntity && <Line selectedEntity={selectedEntity} data={data} />}
-        {selectedStop && <Stop selectedStop={selectedStop} data={data} />} */}
+        {/* {selectedEntity && <Line selectedEntity={selectedEntity} data={data} /> */}
+        {selectedStop && <Stop selectedStop={selectedStop} data={data} />}
       </div>
     </div>
   );
