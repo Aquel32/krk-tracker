@@ -1,15 +1,18 @@
 "use server";
+import mysql from 'mysql2/promise';
 
-import { Database } from "duckdb-async";
-import { NextRequest, NextResponse } from "next/server";
+const connection = await mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'password',
+    database: 'kmk',
+});
 
-const db = await Database.create(":memory:");
-await db.all(`CREATE TABLE routes AS SELECT * FROM read_csv('./src/lib/GTFS_KRK_T/routes.csv', sample_size = -1)`);
-await db.all(`CREATE TABLE trips AS SELECT * FROM read_csv('./src/lib/GTFS_KRK_T/trips.csv', sample_size = -1)`);
-await db.all(`CREATE TABLE stops AS SELECT * FROM read_csv('./src/lib/GTFS_KRK_T/stops.csv', sample_size = -1)`);
-await db.all(`CREATE TABLE stop_times AS SELECT * FROM read_csv('./src/lib/GTFS_KRK_T/stop_times.csv', sample_size = -1)`);
-
-export async function Query(sql: string) {
-    const rows = await db.all(sql);
-    return rows;
+export async function Query(sql:string):Promise<any> {
+  try {
+    const [results] = await connection.query(sql);
+    return results;
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }

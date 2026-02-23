@@ -6,8 +6,6 @@ const root = await protobuf.load("./src/lib/gtfs-realtime.proto");
 const FeedMessage = root.lookupType("transit_realtime.FeedMessage");
 
 export async function decodeGtfs(feedUrl: string) {
-  
-
   const response = await fetch(feedUrl);
   if (!response.ok) {
     throw new Error("Failed to fetch GTFS-Realtime feed");

@@ -1,7 +1,5 @@
 service_id,date,exception_type
-service_2,20251101,2
-service_3,20251101,1
-service_3,20251111,1
-service_3,20251225,1
-service_1,20251111,2
-service_5,20251225,2
+service_3,20260406,1
+service_3,20260501,1
+service_1,20260406,2
+service_4,20260501,2

@@ -8,8 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "duckdb-async": "^1.4.0",
+    "@types/mysql": "^2.15.27",
     "leaflet": "^1.9.4",
+    "mysql2": "^3.18.0",
     "next": "15.5.4",
     "papaparse": "^5.5.3",
     "protobufjs": "^7.5.4",
