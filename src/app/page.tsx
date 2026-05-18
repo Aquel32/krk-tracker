@@ -8,7 +8,7 @@ import Stop from "@/components/Stop";
 import dynamic from "next/dynamic";
 const MapComponent = dynamic(() => import("../components/Map"), { ssr: false });
 import { Query } from "@/lib/db";
-import { decodeGtfs } from "@/lib/gtfs";
+import { decodeGtfs, getRealtimeData } from "@/lib/gtfs";
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
@@ -61,9 +61,8 @@ export default function Home() {
 
     async function fetchData() {
       console.time("fetchData");
-      const vehicles = await decodeGtfs(
-        "https://gtfs.ztp.krakow.pl/VehiclePositions_T.pb",
-      );
+      const vehicles = await getRealtimeData();
+
       const trip_ids = vehicles.entity
         .filter(
           (e: any) => e.vehicle && e.vehicle.trip && e.vehicle.trip.tripId,
@@ -91,7 +90,7 @@ export default function Home() {
               ? "text-yellow-300 border border-yellow-500 border-2"
               : "text-white"
           }`,
-          label: entityData.route_short_name || "U",
+          label: entityData ? entityData.route_short_name : "",
           onClick: async () => {
             console.log("Marker clicked", entity, entityData);
             setSelectedEntity({ entity: entity, data: entityData });
