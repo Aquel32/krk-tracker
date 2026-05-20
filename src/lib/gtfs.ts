@@ -1,6 +1,10 @@
 "use server";
 
+import AdmZip from "adm-zip";
 import * as protobuf from "protobufjs";
+import { getConnection } from "./db";
+import * as fastcsv from "fast-csv";
+import { Connection } from "mysql2/promise";
 
 const root = await protobuf.load("./src/lib/gtfs-realtime.proto");
 const FeedMessage = root.lookupType("transit_realtime.FeedMessage");
@@ -18,8 +22,74 @@ export async function getRealtimeData() {
     const feedData = await decodeGtfs(feedUrl);
     vehicles.entity = [...(vehicles.entity || []), ...feedData.entity];
   }
-  
+
   return vehicles;
+}
+
+type STATIC_FEED = {
+  url: string;
+  folder: string;
+}
+
+const STATIC_FEEDS: STATIC_FEED[] = [
+  { url: "https://gtfs.ztp.krakow.pl/GTFS_KRK_A.zip", folder: "GTFS_KRK_A.zip" },
+  { url: "https://gtfs.ztp.krakow.pl/GTFS_KRK_M.zip", folder: "GTFS_KRK_M.zip" },
+  { url: "https://gtfs.ztp.krakow.pl/GTFS_KRK_T.zip", folder: "GTFS_KRK_T.zip" }
+]
+
+const TABLES_TO_IMPORT: { [tableName: string]: boolean } = {
+  "trips": true,
+  "routes": true
+}
+
+function createColumnsIfDoesntExist(tableName: string, columns: string[], connection: Connection) {
+
+
+}
+
+export async function getStaticData() {
+
+  const connection = await getConnection();
+  connection.connect();
+
+  await Promise.all(STATIC_FEEDS.map(async (feed) => {
+    const response = await fetch(feed.url);
+    const arrayBuffer = await response.arrayBuffer();
+
+    const zip = new AdmZip(Buffer.from(arrayBuffer));
+
+    await Promise.all(zip.getEntries().map(async (entry) => {
+      const tableName = entry.entryName.split(".")[0];
+      const content = entry.getData().toString("utf8");
+
+      createColumnsIfDoesntExist(tableName, content.replace("\r", "").split("\n")[0].split(","), connection);
+
+      if (TABLES_TO_IMPORT[tableName] !== true) {
+        return;
+      }
+
+      const csvData: any[] = [];
+
+      await new Promise<void>((resolve, reject) => {
+        fastcsv
+          .parseString(content, { headers: true })
+          .on("error", reject)
+          .on("data", (data) => {
+            csvData.push(data);
+          })
+          .on("end", () => {
+            console.log(csvData.length);
+            csvData.shift();
+
+            let query = `INSERT INTO ${tableName} () VALUES ?`;
+
+            connection.query(query, [csvData.map(Object.values)]);
+
+            resolve();
+          });
+      });
+    }));
+  }));
 }
 
 export async function decodeGtfs(feedUrl: string) {
@@ -27,16 +97,16 @@ export async function decodeGtfs(feedUrl: string) {
   if (!response.ok) {
     throw new Error("Failed to fetch GTFS-Realtime feed");
   }
-  
+
   const arrayBuf = await response.arrayBuffer();
   const uint8 = new Uint8Array(arrayBuf);
-  
+
   const msg = FeedMessage.decode(uint8);
 
   const obj = FeedMessage.toObject(msg, {
     longs: Number,
     enums: String,
-    bytes: String, 
+    bytes: String,
     defaults: true,
     arrays: true,
     objects: true,

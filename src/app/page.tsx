@@ -8,7 +8,7 @@ import Stop from "@/components/Stop";
 import dynamic from "next/dynamic";
 const MapComponent = dynamic(() => import("../components/Map"), { ssr: false });
 import { Query } from "@/lib/db";
-import { decodeGtfs, getRealtimeData } from "@/lib/gtfs";
+import { decodeGtfs, getRealtimeData, getStaticData } from "@/lib/gtfs";
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
@@ -42,6 +42,8 @@ export default function Home() {
   // }
 
   useEffect(() => {
+    getStaticData();
+
     async function loadInitialData() {
       const stops = await Query("SELECT * FROM stops");
       const mrks: MarkerData[] = [];
@@ -85,11 +87,10 @@ export default function Home() {
             entity.vehicle.position.latitude,
             entity.vehicle.position.longitude,
           ],
-          style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono ${
-            selectedEntity && selectedEntity.entity.id === entity.id
+          style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono ${selectedEntity && selectedEntity.entity.id === entity.id
               ? "text-yellow-300 border border-yellow-500 border-2"
               : "text-white"
-          }`,
+            }`,
           label: entityData ? entityData.route_short_name : "",
           onClick: async () => {
             console.log("Marker clicked", entity, entityData);
