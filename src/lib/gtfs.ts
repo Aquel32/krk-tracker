@@ -1,5 +1,6 @@
 "use server";
 
+import GtfsRealtimeBindings from "gtfs-realtime-bindings";
 import AdmZip from "adm-zip";
 import * as protobuf from "protobufjs";
 import { createColumnsIfDoesntExist, getConnection } from "./db";
@@ -16,14 +17,15 @@ const LIVE_FEEDS = [
 ];
 
 export async function getRealtimeData() {
-  const vehicles: { [k: string]: any } = {};
+  const entities: GtfsRealtimeBindings.transit_realtime.IFeedEntity[] = [];
 
   for (const feedUrl of LIVE_FEEDS) {
     const feedData = await decodeGtfs(feedUrl);
-    vehicles.entity = [...(vehicles.entity || []), ...feedData.entity];
+    entities.push(...feedData);
   }
 
-  return vehicles;
+  // TODO: GET RID OF THIS JSON STRINGIFY
+  return JSON.stringify(entities);
 }
 
 type STATIC_FEED = {
@@ -95,24 +97,18 @@ export async function getStaticData() {
 }
 
 export async function decodeGtfs(feedUrl: string) {
-  const response = await fetch(feedUrl);
+  const response = await fetch(feedUrl, {
+    headers: {
+    }
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch GTFS-Realtime feed");
   }
 
   const arrayBuf = await response.arrayBuffer();
-  const uint8 = new Uint8Array(arrayBuf);
+  const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+      new Uint8Array(arrayBuf)
+  );
 
-  const msg = FeedMessage.decode(uint8);
-
-  const obj = FeedMessage.toObject(msg, {
-    longs: Number,
-    enums: String,
-    bytes: String,
-    defaults: true,
-    arrays: true,
-    objects: true,
-  });
-
-  return obj;
+  return feed.entity;
 }

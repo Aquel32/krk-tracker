@@ -8,7 +8,8 @@ import Stop from "@/components/Stop";
 import dynamic from "next/dynamic";
 const MapComponent = dynamic(() => import("../components/Map"), { ssr: false });
 import { Query } from "@/lib/db";
-import { decodeGtfs, getRealtimeData, getStaticData } from "@/lib/gtfs";
+import { getRealtimeData, getStaticData } from "@/lib/gtfs";
+import * as GtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
@@ -43,7 +44,7 @@ export default function Home() {
 
   useEffect(() => {
     async function loadInitialData() {
-      await getStaticData();
+      // await getStaticData();
 
       const stops = await Query("SELECT * FROM stops");
       const mrks: MarkerData[] = [];
@@ -63,13 +64,12 @@ export default function Home() {
 
     async function fetchData() {
       console.time("fetchData");
-      const vehicles = await getRealtimeData();
+      const entities: GtfsRealtimeBindings.transit_realtime.FeedEntity[] =
+        JSON.parse(await getRealtimeData());
 
-      const trip_ids = vehicles.entity
-        .filter(
-          (e: any) => e.vehicle && e.vehicle.trip && e.vehicle.trip.tripId,
-        )
-        .map((e: any) => `'${e.vehicle.trip.tripId}'`);
+      const trip_ids = entities
+        .filter((e) => e.vehicle && e.vehicle.trip && e.vehicle.trip.tripId)
+        .map((e) => `'${e.vehicle!.trip!.tripId!}'`);
       const queryResult: any = await Query(
         `SELECT t.*, r.* FROM trips t INNER JOIN routes r ON t.route_id = r.route_id WHERE t.trip_id IN (${trip_ids.join(",")})`,
       );
@@ -79,9 +79,9 @@ export default function Home() {
 
       const newMarkers: MarkerData[] = [];
       let index = 0;
-      for (const entity of vehicles.entity) {
+      for (const entity of entities) {
         if (!entity.vehicle || !entity.vehicle.position) continue;
-        const entityData = dataMap.get(entity.vehicle.trip.tripId);
+        const entityData = dataMap.get(entity.vehicle!.trip!.tripId!);
         newMarkers.push({
           position: [
             entity.vehicle.position.latitude,
@@ -101,7 +101,7 @@ export default function Home() {
         });
         index++;
       }
-      setData(vehicles.entity);
+      setData(entities);
       setMarkers(newMarkers);
       setTimeout(fetchData, 5000);
       console.log("Data refreshed");
