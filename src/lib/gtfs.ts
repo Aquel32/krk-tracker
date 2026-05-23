@@ -39,6 +39,8 @@ const STATIC_FEEDS: STATIC_FEED[] = [
 const TABLES_TO_IMPORT: { [tableName: string]: boolean } = {
   "trips": true,
   "routes": true,
+  "stops": true,
+  "stop_times": true,
 }
 
 export async function getStaticData() {
@@ -77,7 +79,7 @@ export async function getStaticData() {
             console.log(feed.folder, tableName, csvData.length);
 
             if (!cleanedTables.has(tableName)) {
-              await connection.query(`DELETE FROM ${tableName}`);
+              await connection.query(`TRUNCATE TABLE ${tableName}`);
               cleanedTables.add(tableName);
             }
 

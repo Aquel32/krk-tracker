@@ -14,7 +14,7 @@ import * as GtfsRealtimeBindings from "gtfs-realtime-bindings";
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<{
-    entity: any;
+    entity: GtfsRealtimeBindings.transit_realtime.FeedEntity;
     data: any;
   } | null>(null);
   const [selectedStop, setSelectedStop] = useState<{
@@ -44,7 +44,7 @@ export default function Home() {
 
   useEffect(() => {
     async function loadInitialData() {
-      await getStaticData();
+      // await getStaticData();
 
       const stops = await Query("SELECT * FROM stops");
       const mrks: MarkerData[] = [];
@@ -59,13 +59,15 @@ export default function Home() {
           },
         });
       });
-      setStopsMarkers(mrks);
+      // setStopsMarkers(mrks);
     }
 
     async function fetchData() {
       console.time("fetchData");
       const entities: GtfsRealtimeBindings.transit_realtime.FeedEntity[] =
         JSON.parse(await getRealtimeData());
+
+      console.log("Fetched realtime data", entities);
 
       const trip_ids = entities
         .filter((e) => e.vehicle && e.vehicle.trip && e.vehicle.trip.tripId)
@@ -77,26 +79,32 @@ export default function Home() {
         queryResult.map((row: any) => [row.trip_id, row]),
       );
 
+      const stops = await Query("SELECT * FROM stops");
+      const stopMap = new Map<string, any>(
+        stops.map((s: any) => [s.stop_id, s]),
+      );
+
+      console.log(stopMap);
+
       const newMarkers: MarkerData[] = [];
       let index = 0;
-      for (const entity of entities) {
-        if (!entity.vehicle || !entity.vehicle.position) continue;
+      for (const entity of entities as any) {
+        if (!entity.vehicle) continue;
+        const s = stopMap.get(entity.vehicle.stopId);
         const entityData = dataMap.get(entity.vehicle!.trip!.tripId!);
+        if (!s) continue;
         newMarkers.push({
-          position: [
-            entity.vehicle.position.latitude,
-            entity.vehicle.position.longitude,
-          ],
+          position: [s.stop_lat, s.stop_lon],
           style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono ${
             selectedEntity && selectedEntity.entity.id === entity.id
               ? "text-yellow-300 border border-yellow-500 border-2"
               : "text-white"
           }`,
-          label: entityData ? entityData.route_short_name : "?",
+          label: entity ? entity.vehicle.trip.routeId : "?",
           onClick: async () => {
-            console.log("Marker clicked", entity);
-            // setSelectedEntity({ entity: entity, data: entityData });
-            // setSelectedStop(null);
+            console.log("Marker clicked", entity, entityData);
+            setSelectedEntity({ entity: entity, data: entityData });
+            setSelectedStop(null);
           },
         });
         index++;

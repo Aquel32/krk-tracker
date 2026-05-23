@@ -1,5 +1,6 @@
 import { Query } from "@/lib/db";
 import { useEffect, useState } from "react";
+import * as GtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 function timeDiff(startTime: string, endTime: string) {
   const toMinutes = (t: string) => {
@@ -7,8 +8,8 @@ function timeDiff(startTime: string, endTime: string) {
     return h * 60 + m;
   };
 
-  let diff = Math.abs(
-    toMinutes(endTime.slice(0, 5)) - toMinutes(startTime.slice(0, 5))
+  let diff = Math.ceil(
+    Math.abs(toMinutes(endTime.slice(0, 5)) - toMinutes(startTime.slice(0, 5))),
   );
 
   const hours = Math.floor(diff / 60);
@@ -22,24 +23,27 @@ function timeDiff(startTime: string, endTime: string) {
 export default function Entity({
   selectedEntity,
 }: {
-  selectedEntity: { entity: any; data: any };
+  selectedEntity: {
+    entity: GtfsRealtimeBindings.transit_realtime.FeedEntity;
+    data: any;
+  };
 }) {
   const [nextStops, setNextStops] = useState<any[]>([]);
   const [currentStop, setCurrentStop] = useState<any>(null);
   const [delay, setDelay] = useState("");
   useEffect(() => {
     async function fetchNextStops() {
+      console.time("fetchNextStops");
       const time = new Date().toTimeString().split(" ")[0];
-      const stop: any = (
+      const stop = (
         await Query(
-          `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time FROM stops INNER JOIN stop_times ON stops.stop_id = stop_times.stop_id WHERE stop_times.trip_id = '${selectedEntity.entity.vehicle.trip.tripId}' AND stops.stop_id = '${selectedEntity.entity.vehicle.stopId}'`
+          `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time FROM stops INNER JOIN stop_times ON stops.stop_id = stop_times.stop_id WHERE stop_times.trip_id = '${selectedEntity.entity.vehicle!.trip!.tripId!}' AND stop_times.stop_id = '${selectedEntity.entity.vehicle!.stopId!}' LIMIT 1`,
         )
       )[0];
-
-      const stops: any[] = await Query(
-        `SELECT stop_times.*, stops.* FROM stop_times INNER JOIN stops ON stop_times.stop_id = stops.stop_id WHERE trip_id = '${selectedEntity.entity.vehicle.trip.tripId}' AND arrival_time > '${stop.arrival_time}' ORDER BY arrival_time`
+      setCurrentStop(stop);
+      const stops: [] = await Query(
+        `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time FROM stop_times INNER JOIN stops ON stop_times.stop_id = stops.stop_id WHERE stop_times.trip_id = '${selectedEntity.entity.vehicle!.trip!.tripId!}' AND stop_times.arrival_time > '${stop.arrival_time!}' ORDER BY stop_times.arrival_time`,
       );
-
       const diff = timeDiff(time, stop.arrival_time);
       if (diff == "00:00") {
         setDelay("");
@@ -51,6 +55,7 @@ export default function Entity({
 
       setCurrentStop(stop);
       setNextStops(stops);
+      console.timeEnd("fetchNextStops");
     }
 
     fetchNextStops();
@@ -62,7 +67,7 @@ export default function Entity({
         <h1>Kierunek: {selectedEntity.data.trip_headsign}</h1>
         <h2>
           Aktualny przystanek: {currentStop?.stop_name} -{" "}
-          {currentStop?.arrival_time.slice(0, 5)}{" "}
+          {currentStop?.arrival_time?.slice(0, 5)}{" "}
           {delay !== "" && <span> + {delay}</span>}
         </h2>
         <p>Nastepne przystanki:</p>
