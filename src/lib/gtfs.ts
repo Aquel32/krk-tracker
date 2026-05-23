@@ -7,9 +7,6 @@ import { createColumnsIfDoesntExist, getConnection } from "./db";
 import * as fastcsv from "fast-csv";
 import { Connection } from "mysql2/promise";
 
-const root = await protobuf.load("./src/lib/gtfs-realtime.proto");
-const FeedMessage = root.lookupType("transit_realtime.FeedMessage");
-
 const LIVE_FEEDS = [
   "https://gtfs.ztp.krakow.pl/VehiclePositions_T.pb",
   "https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb",
@@ -41,29 +38,33 @@ const STATIC_FEEDS: STATIC_FEED[] = [
 
 const TABLES_TO_IMPORT: { [tableName: string]: boolean } = {
   "trips": true,
-  "routes": true
+  "routes": true,
 }
 
 export async function getStaticData() {
-
   const connection = await getConnection();
-  connection.connect();
+  await connection.connect();
 
-  await Promise.all(STATIC_FEEDS.map(async (feed) => {
+  const cleanedTables = new Set<string>();
+
+  for (const feed of STATIC_FEEDS) {
     const response = await fetch(feed.url);
     const arrayBuffer = await response.arrayBuffer();
 
     const zip = new AdmZip(Buffer.from(arrayBuffer));
 
-    await Promise.all(zip.getEntries().map(async (entry) => {
+    for (const entry of zip.getEntries()) {
       const tableName = entry.entryName.split(".")[0];
       const content = entry.getData().toString("utf8");
 
       if (TABLES_TO_IMPORT[tableName] !== true) {
-        return;
+        continue;
       }
 
       const csvData: any[] = [];
+
+      const columns = content.replace(/\r/g, "").split("\n")[0].split(",");
+      await createColumnsIfDoesntExist(tableName, columns);
 
       await new Promise<void>((resolve, reject) => {
         fastcsv
@@ -75,11 +76,13 @@ export async function getStaticData() {
           .on("end", async () => {
             console.log(feed.folder, tableName, csvData.length);
 
-            await connection.query(`DELETE FROM ${tableName}`);
+            if (!cleanedTables.has(tableName)) {
+              await connection.query(`DELETE FROM ${tableName}`);
+              cleanedTables.add(tableName);
+            }
 
             // getting columns from first row of csv
             const columns = csvData[0] ? Object.keys(csvData[0]) : [];
-            await createColumnsIfDoesntExist(tableName, columns);
 
             // formating columns and values for sql query
             const formatedColumns = columns.map((c) => `\`${c}\``).join(", ");
@@ -90,8 +93,8 @@ export async function getStaticData() {
             resolve();
           });
       });
-    }));
-  }));
+    }
+  }
 }
 
 export async function decodeGtfs(feedUrl: string) {

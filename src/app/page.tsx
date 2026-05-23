@@ -92,7 +92,7 @@ export default function Home() {
               ? "text-yellow-300 border border-yellow-500 border-2"
               : "text-white"
           }`,
-          label: entityData ? entityData.route_short_name : "",
+          label: entityData ? entityData.route_short_name : "?",
           onClick: async () => {
             console.log("Marker clicked", entity);
             // setSelectedEntity({ entity: entity, data: entityData });
