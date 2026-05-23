@@ -42,9 +42,9 @@ export default function Home() {
   // }
 
   useEffect(() => {
-    getStaticData();
-
     async function loadInitialData() {
+      await getStaticData();
+
       const stops = await Query("SELECT * FROM stops");
       const mrks: MarkerData[] = [];
       stops.map((s: any) => {
@@ -87,10 +87,11 @@ export default function Home() {
             entity.vehicle.position.latitude,
             entity.vehicle.position.longitude,
           ],
-          style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono ${selectedEntity && selectedEntity.entity.id === entity.id
+          style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono ${
+            selectedEntity && selectedEntity.entity.id === entity.id
               ? "text-yellow-300 border border-yellow-500 border-2"
               : "text-white"
-            }`,
+          }`,
           label: entityData ? entityData.route_short_name : "",
           onClick: async () => {
             console.log("Marker clicked", entity, entityData);

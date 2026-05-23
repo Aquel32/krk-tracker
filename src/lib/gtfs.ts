@@ -2,7 +2,7 @@
 
 import AdmZip from "adm-zip";
 import * as protobuf from "protobufjs";
-import { getConnection } from "./db";
+import { createColumnsIfDoesntExist, getConnection } from "./db";
 import * as fastcsv from "fast-csv";
 import { Connection } from "mysql2/promise";
 
@@ -42,11 +42,6 @@ const TABLES_TO_IMPORT: { [tableName: string]: boolean } = {
   "routes": true
 }
 
-function createColumnsIfDoesntExist(tableName: string, columns: string[], connection: Connection) {
-
-
-}
-
 export async function getStaticData() {
 
   const connection = await getConnection();
@@ -62,8 +57,6 @@ export async function getStaticData() {
       const tableName = entry.entryName.split(".")[0];
       const content = entry.getData().toString("utf8");
 
-      createColumnsIfDoesntExist(tableName, content.replace("\r", "").split("\n")[0].split(","), connection);
-
       if (TABLES_TO_IMPORT[tableName] !== true) {
         return;
       }
@@ -77,13 +70,22 @@ export async function getStaticData() {
           .on("data", (data) => {
             csvData.push(data);
           })
-          .on("end", () => {
-            console.log(csvData.length);
+          .on("end", async () => {
+            console.log(feed.folder, tableName, csvData.length);
             csvData.shift();
 
-            let query = `INSERT INTO ${tableName} () VALUES ?`;
+            await connection.query(`DELETE FROM ${tableName}`);
 
-            connection.query(query, [csvData.map(Object.values)]);
+            // getting columns from first row of csv
+            const columns = csvData[0] ? Object.keys(csvData[0]) : [];
+            await createColumnsIfDoesntExist(tableName, columns);
+
+            // formating columns and values for sql query
+            const formatedColumns = columns.map((c) => `\`${c}\``).join(", ");
+            const values = csvData.map((row) => columns.map((c) => row[c] ?? null));
+            const query = `INSERT INTO ${tableName} (${formatedColumns}) VALUES ?`;
+
+            await connection.query(query, [values]);
 
             resolve();
           });
