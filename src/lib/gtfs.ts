@@ -74,7 +74,6 @@ export async function getStaticData() {
           })
           .on("end", async () => {
             console.log(feed.folder, tableName, csvData.length);
-            csvData.shift();
 
             await connection.query(`DELETE FROM ${tableName}`);
 
@@ -86,7 +85,6 @@ export async function getStaticData() {
             const formatedColumns = columns.map((c) => `\`${c}\``).join(", ");
             const values = csvData.map((row) => columns.map((c) => row[c] ?? null));
             const query = `INSERT INTO ${tableName} (${formatedColumns}) VALUES ?`;
-
             await connection.query(query, [values]);
 
             resolve();

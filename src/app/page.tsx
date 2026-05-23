@@ -44,7 +44,7 @@ export default function Home() {
 
   useEffect(() => {
     async function loadInitialData() {
-      // await getStaticData();
+      await getStaticData();
 
       const stops = await Query("SELECT * FROM stops");
       const mrks: MarkerData[] = [];
@@ -94,9 +94,9 @@ export default function Home() {
           }`,
           label: entityData ? entityData.route_short_name : "",
           onClick: async () => {
-            console.log("Marker clicked", entity, entityData);
-            setSelectedEntity({ entity: entity, data: entityData });
-            setSelectedStop(null);
+            console.log("Marker clicked", entity);
+            // setSelectedEntity({ entity: entity, data: entityData });
+            // setSelectedStop(null);
           },
         });
         index++;
