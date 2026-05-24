@@ -35,11 +35,10 @@ export default function Entity({
   const [delay, setDelay] = useState("");
 
   useEffect(() => {
-    async function fetchNextStops() {
-      console.time("fetchNextStops");
-
+    async function fetchShapes() {
+      console.time("fetchShapes");
       const shapes = await Query(
-        `SELECT * FROM shapes WHERE shape_id = '${selectedEntity.data ? selectedEntity.data.shape_id : ""}' ORDER BY shape_pt_sequence`,
+        `SELECT shape_pt_lat, shape_pt_lon FROM shapes WHERE shape_id = '${selectedEntity.data.shape_id}' ORDER BY shape_pt_sequence`,
       );
       setShapes(
         shapes.map((s: any) => [
@@ -47,16 +46,21 @@ export default function Entity({
           parseFloat(s.shape_pt_lon),
         ]),
       );
+      console.timeEnd("fetchShapes");
+    }
+
+    async function fetchNextStops() {
+      console.time("fetchNextStops");
 
       const time = new Date().toTimeString().split(" ")[0];
       const stop = (
         await Query(
-          `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time FROM stops INNER JOIN stop_times ON stops.stop_id = stop_times.stop_id WHERE stop_times.trip_id = '${selectedEntity.entity.vehicle!.trip!.tripId!}' AND stop_times.stop_id = '${selectedEntity.entity.vehicle!.stopId!}' LIMIT 1`,
+          `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time, stop_desc FROM stops INNER JOIN stop_times ON stops.stop_id = stop_times.stop_id WHERE stop_times.trip_id = '${selectedEntity.entity.vehicle!.trip!.tripId!}' AND stop_times.stop_id = '${selectedEntity.entity.vehicle!.stopId!}' LIMIT 1`,
         )
       )[0];
       setCurrentStop(stop);
       const stops: [] = await Query(
-        `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time FROM stop_times INNER JOIN stops ON stop_times.stop_id = stops.stop_id WHERE stop_times.trip_id = '${selectedEntity.entity.vehicle!.trip!.tripId!}' AND stop_times.arrival_time > '${stop.arrival_time!}' ORDER BY stop_times.arrival_time`,
+        `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time, stop_desc, zone_id FROM stop_times INNER JOIN stops ON stop_times.stop_id = stops.stop_id WHERE stop_times.trip_id = '${selectedEntity.entity.vehicle!.trip!.tripId!}' AND stop_times.arrival_time > '${stop.arrival_time!}' ORDER BY stop_times.arrival_time`,
       );
       const diff = timeDiff(time, stop.arrival_time);
       if (diff == "00:00") {
@@ -74,44 +78,61 @@ export default function Entity({
 
     if (selectedEntity.data) {
       fetchNextStops();
+      // fetchShapes();
     } else {
       setDelay("");
       setCurrentStop(null);
       setNextStops([]);
+      setShapes([]);
     }
   }, [selectedEntity]);
   return (
     <>
-      <div>
-        <h1>
-          Linia:{" "}
-          {selectedEntity.data ? selectedEntity.data.route_short_name : "?"}
-        </h1>
-        <h1>
-          Kierunek:{" "}
-          {selectedEntity.data ? selectedEntity.data.trip_headsign : "?"}
-        </h1>
-        <h1>
-          Numer taborowy: {selectedEntity.entity.vehicle?.vehicle?.licensePlate}
-        </h1>
-        <h2>
-          Aktualny przystanek: {currentStop?.stop_name}{" "}
-          {currentStop?.arrival_time?.slice(0, 5)}{" "}
-          {delay !== "" && <span> + {delay}</span>}
-        </h2>
-        <p>Nastepne przystanki:</p>
-        <div className="overflow-auto h-64">
-          {selectedEntity.data &&
-            nextStops.map((stop, index) => (
-              <div
-                key={index}
-                className="border border-gray-300 mb-1 flex gap-2 p-1"
-              >
-                <p>{stop.stop_name}</p>
-                <p>{stop.departure_time.slice(0, 5)}</p>
-                {delay !== "" && <p> + {delay}</p>}
-              </div>
-            ))}
+      <div className="bg-gray-950 p-4 border border-gray-500 z-10 text-white flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">
+              {selectedEntity.data ? selectedEntity.data.route_short_name : "?"}
+            </h1>
+            <h1 className="text-lg">
+              {selectedEntity.data ? selectedEntity.data.trip_headsign : "?"}
+            </h1>
+          </div>
+
+          <p className="text-sm text-gray-300 ml-5">
+            {selectedEntity.entity.vehicle?.vehicle?.licensePlate}
+          </p>
+        </div>
+        <div className="flex items-center justify-between border-b-2 border-gray-500">
+          <div className="flex gap-1">
+            <h2>{currentStop?.stop_name}</h2>
+            <h2 className="text-sm text-gray-300">{currentStop?.stop_desc}</h2>
+          </div>
+          <p>
+            {currentStop?.arrival_time?.slice(0, 5)}{" "}
+            {delay !== "" && <span className="text-red-400">+ {delay}</span>}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-300">Nastepne:</p>
+          <div className="overflow-auto h-64 px-2">
+            {selectedEntity.data &&
+              nextStops.map((stop, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex gap-1">
+                    <h2>{stop.stop_name}</h2>
+                    <h2 className="text-sm text-gray-300">{stop.stop_desc}</h2>
+                  </div>
+                  <p>
+                    {stop.departure_time.slice(0, 5)}{" "}
+                    {delay !== "" && (
+                      <span className="text-red-400">+ {delay}</span>
+                    )}
+                  </p>
+                </div>
+              ))}
+          </div>
         </div>
       </div>
     </>

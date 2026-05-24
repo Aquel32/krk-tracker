@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MarkerData } from "@/lib/types";
+import { EntityType, MarkerData } from "@/lib/types";
 import Entity from "@/components/Entity";
-import Line from "@/components/Line";
 import Stop from "@/components/Stop";
 import dynamic from "next/dynamic";
 const MapComponent = dynamic(() => import("../components/Map"), { ssr: false });
@@ -20,8 +19,8 @@ export default function Home() {
   const [selectedStop, setSelectedStop] = useState<{
     stop: any;
   } | null>(null);
-  const [markers, setMarkers] = useState<MarkerData[]>([]);
-  const [stopsMarkers, setStopsMarkers] = useState<MarkerData[]>([]);
+  const [vehicleMarkers, setVehicleMarkers] = useState<MarkerData[]>([]);
+  const [stopMarkers, setStopMarkers] = useState<MarkerData[]>([]);
   const [shapes, setShapes] = useState<[number, number][]>([]);
 
   // function updateSelectedMarker(newSelectedEntity: any) {
@@ -29,8 +28,8 @@ export default function Home() {
 
   //   console.log("Updating selected marker", newSelectedEntity);
 
-  //   setMarkers([
-  //     ...markers,
+  //   setVehicleMarkers([
+  //     ...vehicleMarkers,
   //     {
   //       position: [
   //         newSelectedEntity.entity.vehicle.position.latitude,
@@ -54,21 +53,20 @@ export default function Home() {
           position: [s.stop_lat, s.stop_lon],
           style: "font-mono text-black",
           label: "■",
+          type: EntityType.STOP,
           onClick: () => {
             setSelectedStop({ stop: s });
             setSelectedEntity(null);
           },
         });
       });
-      // setStopsMarkers(mrks);
+      setStopMarkers(mrks);
     }
 
     async function fetchData() {
       console.time("fetchData");
       const entities: GtfsRealtimeBindings.transit_realtime.FeedEntity[] =
         JSON.parse(await getRealtimeData());
-
-      console.log("Fetched realtime data", entities);
 
       const trip_ids = entities
         .filter((e) => e.vehicle && e.vehicle.trip && e.vehicle.trip.tripId)
@@ -85,17 +83,22 @@ export default function Home() {
       for (const entity of entities as any) {
         if (!entity.vehicle) continue;
         const entityData = dataMap.get(entity.vehicle!.trip!.tripId!);
+        const backgroundColor =
+          (entityData?.route_type ?? "0") === "3"
+            ? "bg-indigo-950"
+            : "bg-indigo-800";
         newMarkers.push({
           position: [
             entity.vehicle.position.latitude,
             entity.vehicle.position.longitude,
           ],
-          style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono ${
+          style: `w-5 h-5 flex justify-center items-center ${backgroundColor} font-mono ${
             selectedEntity && selectedEntity.entity.id === entity.id
               ? "text-yellow-300 border border-yellow-500 border-2"
               : "text-white"
           }`,
           label: entityData ? entityData.route_short_name : "?",
+          type: EntityType.VEHICLE,
           onClick: async () => {
             console.log("Marker clicked", entity, entityData);
             setSelectedEntity({ entity: entity, data: entityData });
@@ -105,7 +108,7 @@ export default function Home() {
         index++;
       }
       setData(entities);
-      setMarkers(newMarkers);
+      setVehicleMarkers(newMarkers);
       setTimeout(fetchData, 5000);
       console.log("Data refreshed");
       console.timeEnd("fetchData");
@@ -119,14 +122,17 @@ export default function Home() {
 
   return (
     <div>
-      <MapComponent markers={[...markers, ...stopsMarkers]} shapes={shapes} />
+      <MapComponent
+        vehicleMarkers={vehicleMarkers}
+        stopMarkers={stopMarkers}
+        shapes={shapes}
+      />
 
-      <div className="absolute top-2 left-2 bg-white p-2 border border-gray-300 z-10 text-black flex flex-col gap-2">
+      <div className="absolute top-2 left-2">
         {selectedEntity && (
           <Entity selectedEntity={selectedEntity} setShapes={setShapes} />
         )}
-        {/* {selectedEntity && <Line selectedEntity={selectedEntity} data={data} /> */}
-        {/* {selectedStop && <Stop selectedStop={selectedStop} data={data} />} */}
+        {selectedStop && <Stop selectedStop={selectedStop} data={data} />}
       </div>
     </div>
   );

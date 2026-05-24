@@ -7,30 +7,54 @@ import {
   Popup,
   useMap,
   Polyline,
+  CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
 import { MarkerData } from "../lib/types";
+import { useState } from "react";
 
 const Map = ({
-  markers,
+  vehicleMarkers,
+  stopMarkers,
   shapes,
 }: {
-  markers: MarkerData[];
+  vehicleMarkers: MarkerData[];
+  stopMarkers: MarkerData[];
   shapes: [number, number][];
 }) => {
   const position: [number, number] = [50.0626, 19.9386];
+  const [display, setDisplay] = useState(false);
+
+  function MapUpdater() {
+    const map = useMap();
+
+    map.on("zoomend", (e) => {
+      const zoomLevel = map.getZoom();
+      setDisplay(zoomLevel >= 16 ? true : false);
+    });
+
+    return null;
+  }
 
   return (
     <MapContainer
       center={position}
       zoom={11}
-      style={{ height: "100vh", width: "100vw", zIndex: 0 }}
+      style={{
+        height: "100vh",
+        width: "100vw",
+        zIndex: 0,
+        backgroundColor: "var(--color-gray-900)",
+      }}
+      preferCanvas={true}
+      zoomControl={false}
     >
+      <MapUpdater />
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+        url="https://api.maptiler.com/maps/backdrop-v4-dark/{z}/{x}/{y}.png?key=ESu7n4cP58GHIOPsrndc"
+        attribution='&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
       />
-      {markers.map((item, idx) => {
+      {vehicleMarkers.map((item, idx) => {
         return (
           <Marker
             key={idx}
@@ -45,7 +69,37 @@ const Map = ({
           />
         );
       })}
-      <Polyline pathOptions={{ color: "blue" }} positions={shapes} />
+      {display &&
+        stopMarkers.map((item, idx) => {
+          return (
+            <CircleMarker
+              key={idx}
+              center={item.position}
+              radius={5}
+              eventHandlers={{
+                click: item.onClick,
+              }}
+            />
+          );
+
+          // return (
+          //   <Marker
+          //     key={idx}
+          //     position={item.position}
+          //     icon={L.divIcon({
+          //       html: `<div class="${item.style}">${item.label}</div>`,
+          //       className: display,
+          //     })}
+          //     eventHandlers={{
+          //       click: item.onClick,
+          //     }}
+          //   />
+          // );
+        })}
+      <Polyline
+        pathOptions={{ color: "var(--color-blue-400)" }}
+        positions={shapes}
+      />
     </MapContainer>
   );
 };
