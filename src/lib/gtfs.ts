@@ -37,10 +37,11 @@ const STATIC_FEEDS: STATIC_FEED[] = [
 ]
 
 const TABLES_TO_IMPORT: { [tableName: string]: boolean } = {
-  "trips": true,
-  "routes": true,
-  "stops": true,
-  "stop_times": true,
+  "trips": false,
+  "routes": false,
+  "stops": false,
+  "stop_times": false,
+  "shapes": true
 }
 
 export async function getStaticData() {

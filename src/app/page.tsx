@@ -22,6 +22,7 @@ export default function Home() {
   } | null>(null);
   const [markers, setMarkers] = useState<MarkerData[]>([]);
   const [stopsMarkers, setStopsMarkers] = useState<MarkerData[]>([]);
+  const [shapes, setShapes] = useState<[number, number][]>([]);
 
   // function updateSelectedMarker(newSelectedEntity: any) {
   //   if (!newSelectedEntity) return;
@@ -79,28 +80,22 @@ export default function Home() {
         queryResult.map((row: any) => [row.trip_id, row]),
       );
 
-      const stops = await Query("SELECT * FROM stops");
-      const stopMap = new Map<string, any>(
-        stops.map((s: any) => [s.stop_id, s]),
-      );
-
-      console.log(stopMap);
-
       const newMarkers: MarkerData[] = [];
       let index = 0;
       for (const entity of entities as any) {
         if (!entity.vehicle) continue;
-        const s = stopMap.get(entity.vehicle.stopId);
         const entityData = dataMap.get(entity.vehicle!.trip!.tripId!);
-        if (!s) continue;
         newMarkers.push({
-          position: [s.stop_lat, s.stop_lon],
+          position: [
+            entity.vehicle.position.latitude,
+            entity.vehicle.position.longitude,
+          ],
           style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono ${
             selectedEntity && selectedEntity.entity.id === entity.id
               ? "text-yellow-300 border border-yellow-500 border-2"
               : "text-white"
           }`,
-          label: entity ? entity.vehicle.trip.routeId : "?",
+          label: entityData ? entityData.route_short_name : "?",
           onClick: async () => {
             console.log("Marker clicked", entity, entityData);
             setSelectedEntity({ entity: entity, data: entityData });
@@ -124,10 +119,12 @@ export default function Home() {
 
   return (
     <div>
-      <MapComponent markers={[...markers, ...stopsMarkers]} />
+      <MapComponent markers={[...markers, ...stopsMarkers]} shapes={shapes} />
 
       <div className="absolute top-2 left-2 bg-white p-2 border border-gray-300 z-10 text-black flex flex-col gap-2">
-        {selectedEntity && <Entity selectedEntity={selectedEntity} />}
+        {selectedEntity && (
+          <Entity selectedEntity={selectedEntity} setShapes={setShapes} />
+        )}
         {/* {selectedEntity && <Line selectedEntity={selectedEntity} data={data} /> */}
         {/* {selectedStop && <Stop selectedStop={selectedStop} data={data} />} */}
       </div>

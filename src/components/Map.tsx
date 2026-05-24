@@ -1,10 +1,23 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Polyline,
+} from "react-leaflet";
 import L from "leaflet";
 import { MarkerData } from "../lib/types";
 
-const Map = ({ markers }: { markers: MarkerData[] }) => {
+const Map = ({
+  markers,
+  shapes,
+}: {
+  markers: MarkerData[];
+  shapes: [number, number][];
+}) => {
   const position: [number, number] = [50.0626, 19.9386];
 
   return (
@@ -23,7 +36,7 @@ const Map = ({ markers }: { markers: MarkerData[] }) => {
             key={idx}
             position={item.position}
             icon={L.divIcon({
-              html: `<div class="${item.style}">${item.label}</div>`,
+              html: `<div class="${item.style}">${item.label}<div class="bearing"></div></div>`,
               className: "",
             })}
             eventHandlers={{
@@ -32,6 +45,7 @@ const Map = ({ markers }: { markers: MarkerData[] }) => {
           />
         );
       })}
+      <Polyline pathOptions={{ color: "blue" }} positions={shapes} />
     </MapContainer>
   );
 };
