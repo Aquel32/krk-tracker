@@ -12,6 +12,7 @@ import {
 import L from "leaflet";
 import { MarkerData } from "../lib/types";
 import { useState } from "react";
+import MarkerClusterGroup from "react-leaflet-cluster";
 
 const Map = ({
   vehicleMarkers,
@@ -69,33 +70,22 @@ const Map = ({
           />
         );
       })}
-      {display &&
-        stopMarkers.map((item, idx) => {
-          return (
-            <CircleMarker
-              key={idx}
-              center={item.position}
-              radius={5}
-              eventHandlers={{
-                click: item.onClick,
-              }}
-            />
-          );
-
-          // return (
-          //   <Marker
-          //     key={idx}
-          //     position={item.position}
-          //     icon={L.divIcon({
-          //       html: `<div class="${item.style}">${item.label}</div>`,
-          //       className: display,
-          //     })}
-          //     eventHandlers={{
-          //       click: item.onClick,
-          //     }}
-          //   />
-          // );
-        })}
+      {display && (
+        <MarkerClusterGroup chunkedLoading maxClusterRadius={30}>
+          {stopMarkers.map((item, idx) => {
+            return (
+              <CircleMarker
+                key={idx}
+                center={item.position}
+                radius={5}
+                eventHandlers={{
+                  click: item.onClick,
+                }}
+              />
+            );
+          })}
+        </MarkerClusterGroup>
+      )}
       <Polyline
         pathOptions={{ color: "var(--color-blue-400)" }}
         positions={shapes}

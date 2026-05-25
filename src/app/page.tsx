@@ -46,7 +46,9 @@ export default function Home() {
     async function loadInitialData() {
       // await getStaticData();
 
-      const stops = await Query("SELECT * FROM stops");
+      const stops = await Query(
+        "SELECT stop_id, stop_name, stop_desc, stop_lat, stop_lon FROM stops",
+      );
       const mrks: MarkerData[] = [];
       stops.map((s: any) => {
         mrks.push({
