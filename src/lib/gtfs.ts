@@ -40,8 +40,12 @@ const TABLES_TO_IMPORT: { [tableName: string]: boolean } = {
   "trips": false,
   "routes": false,
   "stops": false,
-  "stop_times": true,
-  "shapes": false
+  "stop_times": false,
+  "shapes": false,
+  "calendar": false,
+  "calendar_dates": false,
+  "agency": true,
+  "feed_info": true,
 }
 
 export async function getStaticData() {

@@ -3,6 +3,7 @@ export type MarkerData = {
     style: string;
     label: string;
     type:EntityType;
+    stops?: any[];
     onClick: () => void;    
 }
 

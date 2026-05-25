@@ -37,6 +37,23 @@ const Map = ({
     return null;
   }
 
+  const createClusterCustomIcon = function (cluster: any) {
+    console.log(cluster);
+    return L.circle([0, 0], {
+      radius: 20,
+      color: "oklch(62.3% 0.214 259.815)",
+    });
+    return L.divIcon({
+      html: `<span>$ABC</span>`,
+      className: "custom-marker-cluster",
+      iconSize: L.point(33, 33, true),
+    });
+  };
+
+  function clickCluster(cluster: any) {
+    console.log(cluster);
+  }
+
   return (
     <MapContainer
       center={position}
@@ -70,24 +87,21 @@ const Map = ({
           />
         );
       })}
-      {display && (
-        <MarkerClusterGroup chunkedLoading maxClusterRadius={30}>
-          {stopMarkers.map((item, idx) => {
-            return (
-              <CircleMarker
-                key={idx}
-                center={item.position}
-                radius={5}
-                eventHandlers={{
-                  click: item.onClick,
-                }}
-              />
-            );
-          })}
-        </MarkerClusterGroup>
-      )}
+      {display &&
+        stopMarkers.map((item, idx) => {
+          return (
+            <CircleMarker
+              key={idx}
+              center={item.position}
+              radius={5}
+              eventHandlers={{
+                click: item.onClick,
+              }}
+            />
+          );
+        })}
       <Polyline
-        pathOptions={{ color: "var(--color-blue-400)" }}
+        pathOptions={{ color: "oklch(62.3% 0.214 259.815)" }}
         positions={shapes}
       />
     </MapContainer>

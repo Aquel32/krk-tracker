@@ -2,10 +2,10 @@ import { Query } from "@/lib/db";
 import { useEffect, useState } from "react";
 
 export default function Stop({
-  selectedStop,
+  selectedStops,
   data,
 }: {
-  selectedStop: { stop: any };
+  selectedStops: any[];
   data: any;
 }) {
   const [nextDepartures, setNextDepartures] = useState<any[]>([]);
@@ -14,7 +14,7 @@ export default function Stop({
       const time = new Date().toTimeString().split(" ")[0];
 
       const stops: any[] = await Query(
-        `SELECT DISTINCT stop_times.departure_time, routes.route_short_name, trips.trip_headsign FROM stop_times INNER JOIN trips ON stop_times.trip_id = trips.trip_id INNER JOIN routes ON trips.route_id = routes.route_id WHERE stop_id = '${selectedStop.stop.stop_id}' AND departure_time > '${time}' ORDER BY departure_time LIMIT 10`,
+        `SELECT stop_times.departure_time, routes.route_short_name, trips.trip_headsign FROM stop_times INNER JOIN trips ON stop_times.trip_id = trips.trip_id INNER JOIN routes ON trips.route_id = routes.route_id INNER JOIN calendar_dates ON trips.service_id = calendar_dates.service_id WHERE calendar_dates.date = CURRENT_DATE AND stop_id IN (${selectedStops.map((s) => `'${s.stop_id}'`).join(",")}) AND departure_time > '${time}' ORDER BY departure_time LIMIT 10`,
       );
 
       // const stops: any[] = await Query(
@@ -26,14 +26,14 @@ export default function Stop({
     }
 
     fetchNextStops();
-  }, [selectedStop]);
+  }, [selectedStops]);
 
   return (
     <>
       <div className="bg-gray-950 p-4 border border-gray-500 z-10 text-white flex flex-col gap-2">
         <div className="flex items-center gap-3 border-b-2 border-gray-500">
-          <h1 className="text-3xl font-bold">{selectedStop.stop.stop_name}</h1>
-          <h1 className="text-lg">{selectedStop.stop.stop_desc}</h1>
+          <h1 className="text-3xl font-bold">{selectedStops[0]?.stop_name}</h1>
+          <h1 className="text-lg">{selectedStops[0]?.stop_desc}</h1>
         </div>
 
         <div>

@@ -16,9 +16,7 @@ export default function Home() {
     entity: GtfsRealtimeBindings.transit_realtime.FeedEntity;
     data: any;
   } | null>(null);
-  const [selectedStop, setSelectedStop] = useState<{
-    stop: any;
-  } | null>(null);
+  const [selectedStops, setSelectedStops] = useState<any[]>([]);
   const [vehicleMarkers, setVehicleMarkers] = useState<MarkerData[]>([]);
   const [stopMarkers, setStopMarkers] = useState<MarkerData[]>([]);
   const [shapes, setShapes] = useState<[number, number][]>([]);
@@ -49,20 +47,51 @@ export default function Home() {
       const stops = await Query(
         "SELECT stop_id, stop_name, stop_desc, stop_lat, stop_lon FROM stops",
       );
-      const mrks: MarkerData[] = [];
-      stops.map((s: any) => {
-        mrks.push({
-          position: [s.stop_lat, s.stop_lon],
+
+      // stops.map((s: any) => {
+      //   mrks.push({
+      //     position: [s.stop_lat, s.stop_lon],
+      //     style: "font-mono text-black",
+      //     label: "■",
+      //     type: EntityType.STOP,
+      //     onClick: () => {
+      //       setSelectedStop({ stop: s });
+      //       setSelectedEntity(null);
+      //     },
+      //   });
+      // });
+
+      const uniqueStops = new Map<string, MarkerData>();
+      stops.forEach((s: any) => {
+        const key = `${s.stop_name}-${s.stop_desc}`;
+
+        if (uniqueStops.has(key)) {
+          uniqueStops.get(key)!.stops!.push(s);
+          uniqueStops.get(key)!.position = [
+            (uniqueStops.get(key)!.position[0] + parseFloat(s.stop_lat)) / 2,
+            (uniqueStops.get(key)!.position[1] + parseFloat(s.stop_lon)) / 2,
+          ];
+          uniqueStops.get(key)!.onClick = () => {
+            setSelectedStops(uniqueStops.get(key)!.stops!);
+            setSelectedEntity(null);
+          };
+          return;
+        }
+
+        uniqueStops.set(key, {
+          position: [parseFloat(s.stop_lat), parseFloat(s.stop_lon)],
           style: "font-mono text-black",
           label: "■",
           type: EntityType.STOP,
+          stops: [s],
           onClick: () => {
-            setSelectedStop({ stop: s });
+            setSelectedStops([s]);
             setSelectedEntity(null);
           },
         });
       });
-      setStopMarkers(mrks);
+
+      setStopMarkers(Array.from(uniqueStops.values()));
     }
 
     async function fetchData() {
@@ -104,7 +133,7 @@ export default function Home() {
           onClick: async () => {
             console.log("Marker clicked", entity, entityData);
             setSelectedEntity({ entity: entity, data: entityData });
-            setSelectedStop(null);
+            setSelectedStops([]);
           },
         });
         index++;
@@ -134,7 +163,9 @@ export default function Home() {
         {selectedEntity && (
           <Entity selectedEntity={selectedEntity} setShapes={setShapes} />
         )}
-        {selectedStop && <Stop selectedStop={selectedStop} data={data} />}
+        {selectedStops.length > 0 && (
+          <Stop selectedStops={selectedStops} data={data} />
+        )}
       </div>
     </div>
   );

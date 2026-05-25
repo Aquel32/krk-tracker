@@ -78,7 +78,7 @@ export default function Entity({
 
     if (selectedEntity.data) {
       fetchNextStops();
-      // fetchShapes();
+      fetchShapes();
     } else {
       setDelay("");
       setCurrentStop(null);
