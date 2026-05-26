@@ -6,6 +6,12 @@ Made in `nextjs` and `react`. Uses `gtfs-realtime-bindings` to parse [GTFS](http
 
 Inspired by https://odjazdowykrakow.pl/
 
+## Video
+
+https://github.com/user-attachments/assets/b2434acf-4486-4eea-83cb-0417649d7df3
+
+*In video, i'm using `backdrop-v4-dark` map from [MapTiler](https://cloud.maptiler.com/maps/)*
+
 ## Features
 
 - Rendering map, vehicle locations and stop markers using `react-leaflet`
