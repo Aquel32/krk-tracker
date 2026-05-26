@@ -1,24 +1,7 @@
 import { Query } from "@/lib/db";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import * as GtfsRealtimeBindings from "gtfs-realtime-bindings";
-
-function timeDiff(startTime: string, endTime: string) {
-  const toMinutes = (t: string) => {
-    const [h, m] = t.split(":").map(Number);
-    return h * 60 + m;
-  };
-
-  let diff = Math.ceil(
-    Math.abs(toMinutes(endTime.slice(0, 5)) - toMinutes(startTime.slice(0, 5))),
-  );
-
-  const hours = Math.floor(diff / 60);
-  const minutes = diff % 60;
-
-  return `${hours.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}`;
-}
+import { timeDiff } from "@/lib/utils";
 
 export default function Entity({
   selectedEntity,
@@ -115,8 +98,10 @@ export default function Entity({
         </div>
 
         <div>
-          <p className="text-sm text-gray-300">Nastepne:</p>
-          <div className="overflow-auto h-64 px-2">
+          <p className="text-sm text-gray-300">
+            {selectedEntity.data ? "Następne:" : "Nie znaleziono..."}
+          </p>
+          <div className="overflow-auto max-h-64 px-2">
             {selectedEntity.data &&
               nextStops.map((stop, index) => (
                 <div key={index} className="flex items-center justify-between">

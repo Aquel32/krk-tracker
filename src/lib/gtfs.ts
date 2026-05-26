@@ -114,9 +114,17 @@ export async function decodeGtfs(feedUrl: string) {
   }
 
   const arrayBuf = await response.arrayBuffer();
-  const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
-      new Uint8Array(arrayBuf)
-  );
 
-  return feed.entity;
+  try{
+    const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+      new Uint8Array(arrayBuf)
+    );
+
+    return feed.entity;
+  }
+  catch(e){
+    console.error("Error decoding GTFS feed");
+  }
+
+  return [];
 }
