@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# krk-tracker
 
-## Getting Started
+Simple Kraków's *(but not only)* real time public transport tracker.
 
-First, run the development server:
+Made in `nextjs` and `react`. Uses `gtfs-realtime-bindings` to parse [GTFS](https://gtfs.org) life feed.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Inspired by https://odjazdowykrakow.pl/
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Rendering map, vehicle locations and stop markers using `react-leaflet`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- You can select any vehicle to see its destination, upcoming stops and live arrival times with calculated delays.
 
-## Learn More
+- Drawing route path of selected vehicle on map
 
-To learn more about Next.js, take a look at the following resources:
+- Zooming in reveals stop markers. *(In Kraków, the database has tons of separate records for a single real-life stop, so they are automatically grouped here)*
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- You can click a stop to see upcoming departures, with real-time arrivals and delays
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Setup
 
-## Deploy on Vercel
+Import `kmk.sql` into your Maria DB server.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+>The application automatically updates static GTFS data into the database.
+>Because GTFS feeds can contain millions of records, you must increase `"max_allowed_packet"` value in your DB config. Setting it to `"10000M"` works perfectly.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Copy `example.env` to a new file named `.env` and fill with your DB details.
+You can configure the map provider here. By default, it uses OpenStreetMap, but you can swap it for any other map API
+*I've found some cool maps on [MapTiler](https://cloud.maptiler.com/maps/)*
+
+You can also customize marker colors in `src/components/Map.tsx`.
+
+Initial boot (and every 24 hours after) triggers a GTFS static data update. Be patient, loading entire database can take a while :)
+
+## Known Issues / TODO
+
+- ISSUE: Proccesing stop data takes A LOT of time and needs to be optimized!!!
+- ISSUE: Currently some data can dissapear from stop panel right after real-time data fetch.
+- TODO: Some vehicles appear as "N/A" if they are still finishing a previous trip when you check a stop on their next route.
+- TODO: Make UI responsive for mobile devices
+
+Even though many cities use GTFS, implementation can vary and adopting this tracker to a city other than Kraków might might force you to do some changes
