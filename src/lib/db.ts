@@ -1,6 +1,7 @@
 "use server";
 import mysql from 'mysql2/promise';
 
+// MARIADB CONNECTION
 const connection = await mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,

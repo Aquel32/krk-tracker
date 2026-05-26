@@ -5,39 +5,30 @@ import AdmZip from "adm-zip";
 import { createColumnsIfDoesntExist, getConnection } from "./db";
 import * as fastcsv from "fast-csv";
 import { LIVE_FEEDS, STATIC_FEEDS, TABLES_TO_IMPORT } from "./gtfs-config";
-import * as fs from "node:fs";
+import * as fs from "fs/promises";
 
 const LAST_UPDATE_FILE = "last.json";
 async function checkIfShouldUpdate()
 {
   const now = new Date();
-  fs.readFile(LAST_UPDATE_FILE, 'utf8', (err, data) => {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        console.error('Last data file not found. Creating...');
 
-        fs.writeFile(LAST_UPDATE_FILE, JSON.stringify({ last: now.toISOString() }), (err) => {});
-
-        return true;
-      }
-
-      console.error(err);
-      return true;
-    }
-    
+  try {
+    const data = await fs.readFile(LAST_UPDATE_FILE, 'utf8');
     const parsed = JSON.parse(data);
     const lastUpdate = new Date(parsed.last);
 
     if(now.getTime() - lastUpdate.getTime() > 24 * 60 * 60 * 1000) // 24 hours
     {
       console.log("More than 24 hours since last update. Updating...");
+      fs.writeFile(LAST_UPDATE_FILE, JSON.stringify({ last: now.toISOString() }));
       return true;
     }
 
     return false;
-  });
-
-  return false;
+  } catch (err) {
+    fs.writeFile(LAST_UPDATE_FILE, JSON.stringify({ last: now.toISOString() }));
+    return true;
+  }
 }
 
 export async function getRealtimeData() {
@@ -55,7 +46,9 @@ export async function getRealtimeData() {
 export async function getStaticData() {
   // IN CASE OF ANY ISSUES AND IF YOU WANT TO CALL THIS FUNCTION MANUALLY
   // COMMENT OUT THIS CHECK BELOW.
-  if(!(await checkIfShouldUpdate()))
+  const shouldUpdate = await checkIfShouldUpdate();
+
+  if(shouldUpdate === false)
   {
     return;
   }
