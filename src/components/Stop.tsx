@@ -61,8 +61,9 @@ export default function Stop({
               delay = diff.slice(-2);
             }
           } else {
-            // NO REALTIME DATA OR VEHICLE STILL IN PREVIOUS TRIP
             delay = "N/A";
+            // TODO
+            // IF NO REALTIME DATA, CHECK IF VEHICLE IS STILL IN PREVIOUS TRIP
           }
 
           return {

@@ -4,15 +4,13 @@ import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup,
   useMap,
   Polyline,
   CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
 import { MarkerData } from "../lib/types";
-import { Dispatch, SetStateAction, useState } from "react";
-import * as GtfsRealtimeBindings from "gtfs-realtime-bindings";
+import { useState } from "react";
 
 const Map = ({
   vehicleMarkers,
@@ -55,8 +53,11 @@ const Map = ({
       zoomControl={false}
     >
       <TileLayer
-        url="https://api.maptiler.com/maps/backdrop-v4-dark/{z}/{x}/{y}.png?key=ESu7n4cP58GHIOPsrndc"
-        attribution='&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
+        url={
+          process.env.NEXT_PUBLIC_MAP_TILE_URL ||
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        }
+        attribution={process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION}
       />
       {vehicleMarkers.map((item, idx) => {
         return (
@@ -81,7 +82,7 @@ const Map = ({
               center={item.position}
               radius={5}
               eventHandlers={{
-                click: () => setTimeout(item.onClick, 0.1), // FIX
+                click: () => setTimeout(item.onClick, 0.1), // FIX, CURRENTLY STOP MARKERS ARE TREATED AS MAP SO WITHOUT DELAY IT TRIGGERS CLEARING SELECTED STOP.
               }}
             />
           );

@@ -2,16 +2,9 @@
 
 import GtfsRealtimeBindings from "gtfs-realtime-bindings";
 import AdmZip from "adm-zip";
-import * as protobuf from "protobufjs";
 import { createColumnsIfDoesntExist, getConnection } from "./db";
 import * as fastcsv from "fast-csv";
-import { Connection } from "mysql2/promise";
-
-const LIVE_FEEDS = [
-  "https://gtfs.ztp.krakow.pl/VehiclePositions_T.pb",
-  "https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb",
-  "https://gtfs.ztp.krakow.pl/VehiclePositions_M.pb",
-];
+import { LIVE_FEEDS, STATIC_FEEDS, TABLES_TO_IMPORT } from "./gtfs-config";
 
 export async function getRealtimeData() {
   const entities: GtfsRealtimeBindings.transit_realtime.IFeedEntity[] = [];
@@ -21,31 +14,8 @@ export async function getRealtimeData() {
     entities.push(...feedData);
   }
 
-  // TODO: GET RID OF THIS JSON STRINGIFY
+  // TODO: GET RID OF THIS JSON STRINGIFY (DOING IT BECAUSE OF SERVER TO CLIENT SERIALIZATION ISSUE)
   return JSON.stringify(entities);
-}
-
-type STATIC_FEED = {
-  url: string;
-  folder: string;
-}
-
-const STATIC_FEEDS: STATIC_FEED[] = [
-  { url: "https://gtfs.ztp.krakow.pl/GTFS_KRK_A.zip", folder: "GTFS_KRK_A.zip" },
-  { url: "https://gtfs.ztp.krakow.pl/GTFS_KRK_M.zip", folder: "GTFS_KRK_M.zip" },
-  { url: "https://gtfs.ztp.krakow.pl/GTFS_KRK_T.zip", folder: "GTFS_KRK_T.zip" }
-]
-
-const TABLES_TO_IMPORT: { [tableName: string]: boolean } = {
-  "trips": false,
-  "routes": false,
-  "stops": false,
-  "stop_times": false,
-  "shapes": false,
-  "calendar": false,
-  "calendar_dates": false,
-  "agency": true,
-  "feed_info": true,
 }
 
 export async function getStaticData() {
@@ -55,7 +25,7 @@ export async function getStaticData() {
   const cleanedTables = new Set<string>();
 
   for (const feed of STATIC_FEEDS) {
-    const response = await fetch(feed.url);
+    const response = await fetch(feed);
     const arrayBuffer = await response.arrayBuffer();
 
     const zip = new AdmZip(Buffer.from(arrayBuffer));
@@ -81,17 +51,15 @@ export async function getStaticData() {
             csvData.push(data);
           })
           .on("end", async () => {
-            console.log(feed.folder, tableName, csvData.length);
+            console.log(tableName, csvData.length);
 
             if (!cleanedTables.has(tableName)) {
               await connection.query(`TRUNCATE TABLE ${tableName}`);
               cleanedTables.add(tableName);
             }
 
-            // getting columns from first row of csv
             const columns = csvData[0] ? Object.keys(csvData[0]) : [];
 
-            // formating columns and values for sql query
             const formatedColumns = columns.map((c) => `\`${c}\``).join(", ");
             const values = csvData.map((row) => columns.map((c) => row[c] ?? null));
             const query = `INSERT INTO ${tableName} (${formatedColumns}) VALUES ?`;
