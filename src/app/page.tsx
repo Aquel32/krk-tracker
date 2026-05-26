@@ -22,45 +22,15 @@ export default function Home() {
   const [shapes, setShapes] = useState<[number, number][]>([]);
   const [dbData, setDbData] = useState<Map<string, any>>(new Map());
 
-  // function updateSelectedMarker(newSelectedEntity: any) {
-  //   if (!newSelectedEntity) return;
-
-  //   console.log("Updating selected marker", newSelectedEntity);
-
-  //   setVehicleMarkers([
-  //     ...vehicleMarkers,
-  //     {
-  //       position: [
-  //         newSelectedEntity.entity.vehicle.position.latitude,
-  //         newSelectedEntity.entity.vehicle.position.longitude,
-  //       ],
-  //       style: `w-5 h-5 flex justify-center items-center bg-sky-500 font-mono text-yellow-300 border border-yellow-500 border-2`,
-  //       label: newSelectedEntity.data.route_short_name,
-  //       onClick: () => setSelectedEntity(newSelectedEntity),
-  //     },
-  //   ]);
-  // }
-
   useEffect(() => {
     async function loadInitialData() {
-      // await getStaticData();
+      // IF SOMETHING GOING WRONG WITH STATIC DATA UPDATE, CALL THIS FUNCTION MANUALLY WHEN YOU WANT TO UPDATE DB.
+      // ALSO GO INSIDE, IN CASE OF ANY ISSUES THERE ARE MORE THINGS TO COMMENT OUT TOO.
+      await getStaticData();
 
       const stops = await Query(
         "SELECT stop_id, stop_name, stop_desc, stop_lat, stop_lon FROM stops",
       );
-
-      // stops.map((s: any) => {
-      //   mrks.push({
-      //     position: [s.stop_lat, s.stop_lon],
-      //     style: "font-mono text-black",
-      //     label: "■",
-      //     type: EntityType.STOP,
-      //     onClick: () => {
-      //       setSelectedStop({ stop: s });
-      //       setSelectedEntity(null);
-      //     },
-      //   });
-      // });
 
       const uniqueStops = new Map<string, MarkerData>();
       stops.forEach((s: any) => {
@@ -160,8 +130,6 @@ export default function Home() {
     setSelectedStops([]);
     setShapes([]);
   }
-
-  //useEffect(() => updateSelectedMarker(selectedEntity), [selectedEntity]);
 
   return (
     <div>
