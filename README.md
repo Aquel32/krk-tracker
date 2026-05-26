@@ -4,6 +4,8 @@ Simple Kraków's *(but not only)* real time public transport tracker.
 
 Made in `nextjs` and `react`. Uses `gtfs-realtime-bindings` to parse [GTFS](https://gtfs.org) life feed.
 
+GTFS feed from https://gtfs.ztp.krakow.pl
+
 Inspired by https://odjazdowykrakow.pl/
 
 ## Video
