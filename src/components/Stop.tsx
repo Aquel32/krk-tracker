@@ -4,16 +4,17 @@ import { useEffect, useState } from "react";
 
 export default function Stop({
   selectedStops,
-  data,
-  dataMap,
+  realTimeData,
+  dbData,
 }: {
   selectedStops: any[];
-  data: any;
-  dataMap: Map<string, any>;
+  realTimeData: Map<string, any>;
+  dbData: Map<string, any>;
 }) {
   const [nextDepartures, setNextDepartures] = useState<any[]>([]);
   useEffect(() => {
-    async function fetchNextStops() {
+    async function fetchNextDepartures() {
+      console.time("fetchNextDepartures");
       const time = new Date().toTimeString().split(" ")[0];
       const selectedStopsIds = selectedStops
         .map((s) => `'${s.stop_id}'`)
@@ -29,13 +30,13 @@ export default function Stop({
       let lastFound = -1;
       const final = await Promise.all(
         stops.map(async (s, i) => {
-          const entityData = data.get(s.trip_id);
-          const dbData = dataMap.get(s.trip_id);
+          const entity = realTimeData.get(s.trip_id);
+          const db = dbData.get(s.trip_id);
 
           let found = false;
           let delay = "";
 
-          if (entityData && dbData) {
+          if (entity && db) {
             found = true;
             if (firstFound === -1) firstFound = i;
             lastFound = i;
@@ -48,10 +49,9 @@ export default function Stop({
 
             const stop = (
               await Query(
-                `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time, stop_times.stop_sequence, stop_desc FROM stops INNER JOIN stop_times ON stops.stop_id = stop_times.stop_id WHERE stop_times.trip_id = '${s.trip_id}' AND stop_times.stop_id = '${entityData.vehicle!.stopId!}' LIMIT 1`,
+                `SELECT stops.stop_name, stop_times.arrival_time, stop_times.departure_time, stop_times.stop_sequence, stop_desc FROM stops INNER JOIN stop_times ON stops.stop_id = stop_times.stop_id WHERE stop_times.trip_id = '${s.trip_id}' AND stop_times.stop_id = '${entity.vehicle!.stopId!}' LIMIT 1`,
               )
             )[0];
-            // stop - przystanek na ktorym aktualnie jest ten pojazd
             const diff = timeDiff(time, stop.departure_time);
             if (diff == "00:00") {
               delay = "";
@@ -60,20 +60,15 @@ export default function Stop({
             } else {
               delay = diff.slice(-2);
             }
-
-            // if (
-            //   parseFloat(stop.stop_sequence) > parseFloat(sequenceOfMainStop)
-            // ) {
-            //   delay += " P";
-            // }
           } else {
+            // NO REALTIME DATA OR VEHICLE STILL IN PREVIOUS TRIP
             delay = "N/A";
           }
 
           return {
             stop: s,
-            entityData,
-            dbData,
+            entity,
+            db,
             delay,
             found,
             arrivalTime: timeToNumber(s.departure_time),
@@ -97,9 +92,10 @@ export default function Stop({
         .sort((a, b) => a.realTime - b.realTime);
 
       setNextDepartures(filteredFinal);
+      console.timeEnd("fetchNextDepartures");
     }
 
-    fetchNextStops();
+    fetchNextDepartures();
   }, [selectedStops]);
 
   return (

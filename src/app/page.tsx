@@ -11,7 +11,7 @@ import { getRealtimeData, getStaticData } from "@/lib/gtfs";
 import * as GtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 export default function Home() {
-  const [data, setData] = useState<Map<string, any>>(new Map());
+  const [realTimeData, setRealTimeData] = useState<Map<string, any>>(new Map());
   const [selectedEntity, setSelectedEntity] = useState<{
     entity: GtfsRealtimeBindings.transit_realtime.FeedEntity;
     data: any;
@@ -20,7 +20,7 @@ export default function Home() {
   const [vehicleMarkers, setVehicleMarkers] = useState<MarkerData[]>([]);
   const [stopMarkers, setStopMarkers] = useState<MarkerData[]>([]);
   const [shapes, setShapes] = useState<[number, number][]>([]);
-  const [dataMap, setDataMap] = useState<Map<string, any>>(new Map());
+  const [dbData, setDbData] = useState<Map<string, any>>(new Map());
 
   // function updateSelectedMarker(newSelectedEntity: any) {
   //   if (!newSelectedEntity) return;
@@ -108,17 +108,17 @@ export default function Home() {
         `SELECT t.*, r.* FROM trips t INNER JOIN routes r ON t.route_id = r.route_id INNER JOIN calendar_dates cd ON t.service_id = cd.service_id WHERE t.trip_id IN (${trip_ids.join(",")}) AND cd.date = CURRENT_DATE`,
       );
 
-      const dataMap = new Map<string, any>(
+      const dbDataMap = new Map<string, any>(
         queryResult.map((row: any) => [row.trip_id, row]),
       );
-      const newData = new Map<string, any>();
+      const realTimeDataMap = new Map<string, any>();
 
       const newMarkers: MarkerData[] = [];
       let index = 0;
       for (const entity of entities as any) {
         if (!entity.vehicle) continue;
-        const entityData = dataMap.get(entity.vehicle!.trip!.tripId!);
-        newData.set(entity.vehicle!.trip!.tripId!, entity);
+        const entityData = dbDataMap.get(entity.vehicle!.trip!.tripId!);
+        realTimeDataMap.set(entity.vehicle!.trip!.tripId!, entity);
         const backgroundColor =
           (entityData?.route_type ?? "0") === "3"
             ? "bg-indigo-950"
@@ -143,8 +143,8 @@ export default function Home() {
         });
         index++;
       }
-      setData(newData);
-      setDataMap(dataMap);
+      setRealTimeData(realTimeDataMap);
+      setDbData(dbDataMap);
       setVehicleMarkers(newMarkers);
       setTimeout(fetchData, 5000);
       console.log("Data refreshed");
@@ -155,6 +155,12 @@ export default function Home() {
     fetchData();
   }, []);
 
+  function onMapClick() {
+    setSelectedEntity(null);
+    setSelectedStops([]);
+    setShapes([]);
+  }
+
   //useEffect(() => updateSelectedMarker(selectedEntity), [selectedEntity]);
 
   return (
@@ -163,6 +169,7 @@ export default function Home() {
         vehicleMarkers={vehicleMarkers}
         stopMarkers={stopMarkers}
         shapes={shapes}
+        onMapClick={onMapClick}
       />
 
       <div className="absolute top-2 left-2">
@@ -170,7 +177,11 @@ export default function Home() {
           <Entity selectedEntity={selectedEntity} setShapes={setShapes} />
         )}
         {selectedStops.length > 0 && (
-          <Stop selectedStops={selectedStops} data={data} dataMap={dataMap} />
+          <Stop
+            selectedStops={selectedStops}
+            realTimeData={realTimeData}
+            dbData={dbData}
+          />
         )}
       </div>
     </div>
